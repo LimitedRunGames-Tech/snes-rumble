@@ -1,0 +1,359 @@
+;**********************************************************************
+;*                                                                    *
+;*                  P R O J E C T :   REALITY_ENGINE                  *
+;*                                                                    *
+;*                       RUMBLE HANDLING MODULE                       *
+;*                                                                    *
+;**********************************************************************
+
+	ifn	useRUMBLE
+
+
+	SECTION	ENGINE
+	cpu	65816
+
+;
+;	* * * * * * *       INITIALIZE RUMBLE       * * * * * * *
+;
+	dbr	0
+	dpr	0
+_InitRumble
+	mode	'AX!'
+	ldx	#<_RumbleWaveOffsetsTable
+	lda	#^_RumbleWaveTables
+	ldy	#<_RumbleWaveTables
+	bra	InitRumble1
+
+InitRumble
+	mode	'AX!'
+	ldx	#<RumbleWaveOffsetsTable
+	lda	#^RumbleWaveTables
+	ldy	#<RumbleWaveTables
+
+InitRumble1
+	sty	RumbleWaveTablesPtr
+	sta	RumbleWaveTablesPtr+2
+
+	stx	RumbleWaveOffsetsTablePtr
+	sta	RumbleWaveOffsetsTablePtr+2
+
+;
+;	>>>   RESET WAVE OFFSETS   <<<
+;
+	ldx	#0
+IRB200
+	stz	RumbleWaveOffsetsL,x
+	stz	RumbleWaveOffsetsR,x
+	inx
+	inx
+	cpx	#(MaxRumbles*2)
+	bne	IRB200
+
+	mode	'a!'
+
+;
+;	>>>   RESET WAVE EFFECTS   <<<
+;
+	ldx	#0
+IRB300
+	stz	RumbleWaveEffects,x
+	inx
+	cpx	#(MaxRumbles)
+	bne	IRB300
+
+	lda	#^RumbleWaveOffsetsL
+	sta	RumbleWaveOffsetsPtr+2
+
+	stz	RUMBLE1
+
+	mode	'A!'
+	lda	#$FFFF
+	sta	RumbleEnable			; Rumble Enabled
+
+	ifn	useREALITYTEST
+	sta	_RumbleOn
+	endif
+
+	ife	useREALITYTEST
+	lda	#0				; NO Rumbles to Process
+	sta	RLNumRumbles
+	endif
+
+	rtl
+
+
+
+	SECTION	ENGINE_RAMCODE
+
+;
+;	* * * * * * *       ADD RUMBLE       * * * * * * *
+;
+;	.A	=	Rumble Effect# | Command Bits
+;
+	dbr	0
+	dpr	0
+	mode	'aX'
+_AddRumble	equ	((**&$00ffffff)+$C00000)
+	rtl
+__AddRumble	equ	((**&$00ffffff)+$C00000)
+	pea	#<(_AddRumble-1)
+AddRumble
+	sta	RumbleTemp			; Save Rumble Effect#
+
+;
+;	>>>   CHECK IF ADD/REMOVE LOOP EFFECT   <<<
+;
+	cmp	#(recAddLoop)			; Add Loop / Remove Loop ?
+	bcs	ARE400
+
+;
+;	>>>   FIND FREE WAVE OFFSET   <<<
+;
+ARE200
+	ldy	#0
+ARE220
+	lda	RumbleWaveEffects,y		; Any Waveform Effect?
+	beq	ARE300				; No
+	iny
+	cpy	#(MaxRumbles)
+	bne	ARE220
+	rts
+
+;
+;	>>>   ADD WAVE OFFSETS   <<<
+;
+ARE300
+	lda	RumbleTemp			; Rumble Effect
+	sta	RumbleWaveEffects,y		; Save Waveform Effect
+
+	mode	'A!'
+
+	tya
+	asl	a
+	pha					; Save WaveformOffset Index
+
+	lda	RumbleTemp
+	and	#(reMask)
+	asl	a				; Get Offset in RumbleWaveOffsetsTable
+	asl	a
+	tay
+
+	lda	[RumbleWaveOffsetsTablePtr],y	; Left
+	tax					; .X = Left
+	iny
+	iny
+	lda	[RumbleWaveOffsetsTablePtr],y	; Right
+
+	ply					; .Y = WaveformOffset Index
+
+	sta	RumbleWaveOffsetsR,y		; Right
+
+	txa					; Left
+	sta	RumbleWaveOffsetsL,y
+
+	rts
+
+;
+;	>>>   ADD / REMOVE LOOP EFFECT   <<<
+;
+	mode	'a'
+ARE400
+	cmp	#(recRemLoop)			; Remove Loop Effect?
+	bcs	ARE700
+
+;
+;	>>>   ADD LOOP EFFECT   <<<
+;
+;	>>>   FIND EXISTING WAVE OFFSET   <<<
+;
+	ldy	#0
+ARE520
+	lda	RumbleWaveEffects,y		; Matching Waveform Effect?
+	cmp	RumbleTemp
+	beq	ARE580
+	iny
+	cpy	#(MaxRumbles)
+	bne	ARE520
+	bra	ARE200
+ARE580
+	rts
+
+;
+;	>>>   REMOVE LOOP EFFECT   <<<
+;
+;	>>>   FIND EXISTING WAVE OFFSET   <<<
+;
+	mode	'a'
+ARE700
+	sec					; .A = Rumble Loop Effect
+	sbc	#(recRemLoop-recAddLoop)
+	sta	RumbleTemp
+
+	ldx	#0
+ARE720
+	lda	RumbleWaveEffects,x		; Matching Waveform Effect?
+	cmp	RumbleTemp
+	beq	ARE800
+	inx
+	cpx	#(MaxRumbles)
+	bne	ARE720
+	rts
+ARE800
+	stz	RumbleWaveEffects,x
+	mode	'A!'
+	txa
+	asl	a
+	tax
+	stz	RumbleWaveOffsetsL,x
+	stz	RumbleWaveOffsetsR,x
+	rts
+
+
+
+;
+;	* * * * * * *       CALCULATE RUMBLE       * * * * * * *
+;
+	dbr	0
+	dpr	0
+_CalcRumble	equ	((**&$00ffffff)+$C00000)
+CalcRumble
+;
+;	>>>   MIX RUMBLE WAVEFORM RIGHT   <<<
+;
+	mode	'AX!'
+	ldx	#<RumbleWaveOffsetsR
+	per	CRE400-1
+	bra	CalcRumbleWave
+CRE400
+	pha					; Save Right Sample
+;
+;	>>>   MIX RUMBLE WAVEFORM LEFT   <<<
+;
+	ldx	#<RumbleWaveOffsetsL
+	per	CRE500-1
+	bra	CalcRumbleWave
+CRE500
+;
+;	>>>   CALCULATE RUMBLE HARDWARE VALUE   <<<
+;
+	mode	'a!'
+	lsr	a
+	lsr	a
+	lsr	a
+	lsr	a
+	pha
+	lda	2,s				; Right Sample
+	and	#$F0
+	ora	1,s
+;
+	and	RumbleEnable			; Rumble Enabled?
+	and	_RumbleOn			; Rumble On?
+;
+	sta	RUMBLE1
+	pla					; Discard Left Sample
+	plx					; Discard Right Sample
+	rtl
+
+
+
+;
+;	* * * * * * *       CALCULATE RUMBLE WAVE       * * * * * * *
+;
+;	.X	=	Pointer to RumbleWaveOffsets[L/R]
+;
+;	.A	=	Wave Sample ($0000-$00FF)
+;
+	dbr	0
+	dpr	0
+	mode	'AX'
+CalcRumbleWave
+	stx	RumbleWaveOffsetsPtr		; Pointer to Wave Offsets
+
+	stz	RumbleSample			; SampleTotal = 0
+
+	ldy	#0
+;
+;	>>>   PROCESS WAVE OFFSET   <<<
+;
+CRW200
+	tya
+	lsr	a
+	tax
+	lda	RumbleWaveEffects,x		; Get Waveform Effect#
+	beq	CRW800
+
+	lda	[RumbleWaveOffsetsPtr],y	; Any Waveform Offset?
+	beq	CRW800				; No
+
+	tyx
+
+CRW300
+	tay
+	mode	'a!'
+	lda	[RumbleWaveTablesPtr],y		; Sample
+
+	txy
+
+	cmp	#$FF				; Loop Waveform?
+	beq	CRW400
+
+	mode	'A!'
+	and	#$00FF				; End of Waveform?
+	beq	CRW600				; Yes
+
+	clc					; SampleTotal += Sample
+	adc	RumbleSample
+	sta	RumbleSample
+
+	lda	[RumbleWaveOffsetsPtr],y	; Move to next sample
+	clc
+	adc	#1
+	sta	[RumbleWaveOffsetsPtr],y
+
+;
+;	>>>   NEXT WAVE OFFSET   <<<
+;
+CRW800
+	iny
+	iny
+	cpy	#(MaxRumbles*2)
+	bne	CRW200
+;
+;	>>>   LIMIT SAMPLE   <<<
+;
+	lda	RumbleSample			; SampleTotal
+	cmp	#$0100
+	bcc	CRW900
+	lda	#$00FF
+CRW900
+	rts
+
+;
+;	>>>   RUMBLE WAVE LOOP   <<<
+;
+CRW400
+	mode	'A!'
+	lda	[RumbleWaveOffsetsPtr],y	; Get Waveform Offset
+	tay
+	iny
+	lda	[RumbleWaveTablesPtr],y		; Get Waveform Loop Offset
+	txy
+	sta	[RumbleWaveOffsetsPtr],y	; Save Waveform Offset
+	bra	CRW300
+
+;
+;	>>>   RUMBLE WAVE END   <<<
+;
+CRW600
+	sta	[RumbleWaveOffsetsPtr],y	; Clear Waveform Offset
+
+	tya					; .X = Index to Waveform Effect
+	lsr	a
+	tax
+	stz	RumbleWaveEffects,x		; Clear Waveform Effect#
+
+	bra	CRW800
+
+
+
+	endif

@@ -1,0 +1,161 @@
+;**********************************************************************
+;*                                                                    *
+;*                  P R O J E C T :   REALITY_ENGINE                  *
+;*                                                                    *
+;*                         RUMBLE DATA MODULE                         *
+;*                                                                    *
+;**********************************************************************
+
+	ifn	useRUMBLE
+
+
+	SECTION	ENGINE_RAMCODE
+	cpu	65816
+
+;
+;	* * * * * * *       RUMBLE WAVEFORM TABLES       * * * * * * *
+;
+_RumbleWaveTables	equ	((**&$00ffffff)+$C00000)
+RumbleWaveTables
+	dc.b	$52				; Ensure Wave Tables are NOT at Offset 0 (used as Terminator)
+
+	ifn	useRUMBLE_TEST
+RumbleWaveMotorR1L
+RumbleWaveMotorL1R
+RumbleWaveMotorR8L
+RumbleWaveMotorL8R
+RumbleWaveMotorR15L
+RumbleWaveMotorL15R
+	dc.b	$00, $00, $00, $00, $00, $00, 0
+
+RumbleWaveMotorR1R
+RumbleWaveMotorL1L
+	dc.b	$10, $10, $10, $10, $10, $10, 0
+
+RumbleWaveMotorR8R
+RumbleWaveMotorL8L
+	dc.b	$80, $80, $80, $80, $80, $80, 0
+
+RumbleWaveMotorR15R
+RumbleWaveMotorL15L
+	dc.b	$F0, $F0, $F0, $F0, $F0, $F0, 0
+	endif
+
+RumbleWaveButton1L
+	dc.b	$30, 0
+RumbleWaveButton1R
+	dc.b	$30, 0
+
+RumbleWaveButton2L
+	dc.b	$F0, $F0, $F0, $F0, $F0, $F0, 0
+RumbleWaveButton2R
+	dc.b	$F0, $F0, $F0, $F0, $F0, $F0, 0
+
+	ifn	useRUMBLE_DAMAGE
+RumbleWaveDamagePlayer1L
+	dc.b	$40, $40, $40, 0
+RumbleWaveDamagePlayer1R
+	dc.b	$40, $40, $40, 0
+
+RumbleWaveDamagePlayer2L
+	dc.b	$80, $80, $80, 0
+RumbleWaveDamagePlayer2R
+	dc.b	$80, $80, $80, 0
+
+RumbleWaveDamagePlayer3L
+	dc.b	$C0, $C0, $C0, 0
+RumbleWaveDamagePlayer3R
+	dc.b	$C0, $C0, $C0, 0
+	endif
+
+	ifn	useRUMBLE_WEAPONS
+RumbleWaveFireFistL
+	dc.b	$30, $30, $20, $10, 0
+RumbleWaveFireFistR
+	dc.b	$30, $30, $20, $10, 0
+
+RumbleWaveFirePistolL
+	dc.b	$70, $60, $50, $40, 0
+RumbleWaveFirePistolR
+	dc.b	$70, $60, $50, $40, 0
+
+RumbleWaveFireShotGunL
+	dc.b	$80, $80, $60, $60, $40, $30, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $20, $40, $01, $01, $01, $01, $01, $01, $01, $01, $10, $30, 0
+RumbleWaveFireShotGunR
+	dc.b	$80, $80, $60, $60, $40, $30, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $50, $60, $01, $01, $01, $01, $01, $01, $01, $01, $40, $50, 0
+
+RumbleWaveIdleChainSawL
+	dc.b	$01, $01, $FF
+	dc.w	(RumbleWaveIdleChainSawL-RumbleWaveTables)
+RumbleWaveIdleChainSawR
+	dc.b	$20, $10, $FF
+	dc.w	(RumbleWaveIdleChainSawR-RumbleWaveTables)
+
+RumbleWaveFireChainSawL
+	dc.b	$20, $20, $20, $20, $20, $20, 0
+RumbleWaveFireChainSawR
+	dc.b	$90, $90, $90, $90, $90, $90, 0
+
+RumbleWaveFireChainGunL
+	dc.b	$50, $A0, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, 0
+RumbleWaveFireChainGunR
+	dc.b	$01, $01, $01, $01, $01, $01, $50, $A0, $01, $01, $01, $01, 0
+
+RumbleWaveFireRocketL
+	dc.b	$80, $80, $80, $80, $80, 0
+RumbleWaveFireRocketR
+	dc.b	$80, $80, $80, $80, $80, 0
+
+RumbleWaveFirePlasmaL
+	dc.b	$80, $80, $80, 0
+RumbleWaveFirePlasmaR
+	dc.b	$80, $80, $80, 0
+
+RumbleWaveFireBFGL
+	dc.b	$A0, $A0, $A0, $A0, $A0, $A0, $A0, 0
+RumbleWaveFireBFGR
+	dc.b	$A0, $A0, $A0, $A0, $A0, $A0, $A0, 0
+	endif
+
+
+
+;
+;	* * * * * * *       RUMBLE WAVEFORM OFFSETS TABLE       * * * * * * *
+;
+_RumbleWaveOffsetsTable	equ	((**&$00ffffff)+$C00000)
+RumbleWaveOffsetsTable
+	dc.4	'RAND'
+
+	ifn	useRUMBLE_TEST
+	dc.w	(RumbleWaveMotorR1L-RumbleWaveTables),		(RumbleWaveMotorR1R-RumbleWaveTables)		; Motor Right 1
+	dc.w	(RumbleWaveMotorL1L-RumbleWaveTables),		(RumbleWaveMotorL1R-RumbleWaveTables)		; Motor Left 1
+	dc.w	(RumbleWaveMotorR8L-RumbleWaveTables),		(RumbleWaveMotorR8R-RumbleWaveTables)		; Motor Right 8
+	dc.w	(RumbleWaveMotorL8L-RumbleWaveTables),		(RumbleWaveMotorL8R-RumbleWaveTables)		; Motor Left 8
+	dc.w	(RumbleWaveMotorR15L-RumbleWaveTables),		(RumbleWaveMotorR15R-RumbleWaveTables)		; Motor Right 15
+	dc.w	(RumbleWaveMotorL15L-RumbleWaveTables),		(RumbleWaveMotorL15R-RumbleWaveTables)		; Motor Left 15
+	endif
+
+	dc.w	(RumbleWaveButton1L-RumbleWaveTables),		(RumbleWaveButton1R-RumbleWaveTables)		; Button 1
+	dc.w	(RumbleWaveButton2L-RumbleWaveTables),		(RumbleWaveButton2R-RumbleWaveTables)		; Button 2
+
+	ifn	useRUMBLE_DAMAGE
+	dc.w	(RumbleWaveDamagePlayer1L-RumbleWaveTables),	(RumbleWaveDamagePlayer1R-RumbleWaveTables)	; Damage Player 1
+	dc.w	(RumbleWaveDamagePlayer2L-RumbleWaveTables),	(RumbleWaveDamagePlayer2R-RumbleWaveTables)	; Damage Player 2
+	dc.w	(RumbleWaveDamagePlayer3L-RumbleWaveTables),	(RumbleWaveDamagePlayer3R-RumbleWaveTables)	; Damage Player 3
+	endif
+
+	ifn	useRUMBLE_WEAPONS
+	dc.w	(RumbleWaveFireFistL-RumbleWaveTables),		(RumbleWaveFireFistR-RumbleWaveTables)		; Fire Fist
+	dc.w	(RumbleWaveFirePistolL-RumbleWaveTables),	(RumbleWaveFirePistolR-RumbleWaveTables)	; Fire Pistol
+	dc.w	(RumbleWaveFireShotGunL-RumbleWaveTables),	(RumbleWaveFireShotGunR-RumbleWaveTables)	; Fire ShotGun
+	dc.w	(RumbleWaveIdleChainSawL-RumbleWaveTables),	(RumbleWaveIdleChainSawR-RumbleWaveTables)	; Idle ChainSaw
+	dc.w	(RumbleWaveFireChainSawL-RumbleWaveTables),	(RumbleWaveFireChainSawR-RumbleWaveTables)	; Fire ChainSaw
+	dc.w	(RumbleWaveFireChainGunL-RumbleWaveTables),	(RumbleWaveFireChainGunR-RumbleWaveTables)	; Fire ChainGun
+	dc.w	(RumbleWaveFireRocketL-RumbleWaveTables),	(RumbleWaveFireRocketR-RumbleWaveTables)	; Fire Rocket
+	dc.w	(RumbleWaveFirePlasmaL-RumbleWaveTables),	(RumbleWaveFirePlasmaR-RumbleWaveTables)	; Fire Plasma
+	dc.w	(RumbleWaveFireBFGL-RumbleWaveTables),		(RumbleWaveFireBFGR-RumbleWaveTables)		; Fire BFG
+	endif
+
+
+
+	endif

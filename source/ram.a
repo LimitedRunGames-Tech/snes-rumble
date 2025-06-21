@@ -1,0 +1,51 @@
+;**********************************************************************
+;*                                                                    *
+;*                   P R O J E C T :   REALITY_ENGINE                 *
+;*                                                                    *
+;*                                                   RAM MEMORY       *
+;*                                                                    *
+;**********************************************************************
+
+	include	realitytest.i
+
+;
+;	* * * * * * *       RAM0 VARIABLES       * * * * * * *
+;
+	SECTION	RAM0,LOAD=$000000,ORG=$000000,SIZE=$0100
+
+	ifn	useRUMBLE
+RumbleWaveTablesPtr	ds.l	1		; Pointer to Rumble Wave Tables
+RumbleWaveOffsetsPtr	ds.l	1		; Pointer to Rumble Wave Offsets
+RumbleWaveOffsetsTablePtr ds.l	1		; Pointer to Rumble Wave Offsets Table
+RumbleTemp		ds.b	8		; Temporary Rumble Variable
+	endif
+
+	ifn	useMP5
+MP5Connected		ds.b	1		; $01 = MultiPlayer 5 Connected
+	endif
+
+
+
+;
+;	* * * * * * *       RAM1 VARIABLES       * * * * * * *
+;
+	SECTION	RAM1,LOAD=$000100,ORG=$000100,SIZE=$1f00
+
+JOY1			ds.w	1		; Joystick Controller I
+JOY1Stat		ds.b	1		; $00=JOYSTICK,$01=MOUSE,$FF=INVALID!
+MOUSE1X			ds.b	1		; Mouse1 X Displacement
+MOUSE1Y			ds.b	1		; Mouse1 Y Displacement
+;
+JOY2			ds.w	1		; Joystick Controller II
+JOY2Stat		ds.b	1		; $00=JOYSTICK,$01=MOUSE,$FF=INVALID!
+MOUSE2X			ds.b	1		; Mouse1 X Displacement
+MOUSE2Y			ds.b	1		; Mouse1 Y Displacement
+
+	ifn	useRUMBLE
+RUMBLE1			ds.b	1		; Rumble HW Left.4 / Right.4
+RumbleSample		ds.w	1		; Rumble Sample
+RumbleEnable		ds.w	1		; Rumble Enabled (0=Paused)
+RumbleWaveEffects	ds.b	(MaxRumbles)	; Rumble Wave Effects (0=Unused)
+RumbleWaveOffsetsL	ds.w	(MaxRumbles)	; Rumble Wave Offsets Left  (0=Unused)
+RumbleWaveOffsetsR	ds.w	(MaxRumbles)	; Rumble Wave Offsets Right (0=Unused)
+	endif

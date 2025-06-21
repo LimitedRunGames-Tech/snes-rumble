@@ -1,0 +1,365 @@
+;**********************************************************************
+;*                                                                    *
+;*                  P R O J E C T :   REALITY_ENGINE                  *
+;*                                                                    *
+;*                       PLAYER HANDLING MODULE                       *
+;*                                                                    *
+;**********************************************************************
+
+
+
+;
+;	* * * * * * *       READ JOYSTICK/MOUSE       * * * * * * *
+;
+	dbr	0
+	dpr	0
+
+_ReadJOY	equ	((**&$00ffffff)+$C00000)
+	rtl
+__ReadJOY	equ	((**&$00ffffff)+$C00000)
+	pea	#<(_ReadJOY-1)
+	ife	useREALITYTEST
+	pea	#<(_ConvertJOY-1)
+	endif
+ReadJOY
+	mode	'aX!'
+
+	lda	#$01
+;	stz	JOYOUT
+	sta	JOYOUT				; Reset Data Counter
+	nop
+	nop
+	stz	JOYOUT
+	nop
+	nop
+
+;	stz	ITemp
+;	stz	ITemp+2
+
+	ldy	#16-1				; Read 16 Controller Bits
+RJY2200
+	lda	_JOYSER0			; Controller I
+	mode	'A!'
+	lsr	a
+	rol	ITemp
+	mode	'a!'
+	lda	_JOYSER1			; Controller II
+	mode	'A!'
+	lsr	a
+	rol	ITemp+2
+	mode	'a!'
+	dey
+	bpl	RJY2200
+
+;
+;	>>>   CONTROLLER I   <<<
+;
+	ldx	ITemp				; Controller I
+	txa
+	and	#%00001111
+	beq	RJY3000
+	brl	RJY4000				; NOT a Joystick
+;
+;	>>>   JOYSTICK   <<<
+;
+RJY3000
+	lda	_JOYSER0			; Controller I
+	lsr	a
+	bcc	RJY4000				; Nothing Connected
+
+	lda	#$00				; Joystick Connected
+	sta	JOY1Stat
+	stx	JOY1
+
+	ife	useRUMBLE
+	bra	RJY5000
+	endif
+	
+	ifn	useRUMBLE
+;
+;	>>>   JOYSTICK / RUMBLE   <<<
+;
+	ife	useRUMBLE_WITH_MOUSE
+	lda	JOY2Stat			; MOUSE Previously Connected?
+	dec	a
+	beq	RJY5000				; Yes, Disable Rumble!
+	endif
+
+	mode	'x!'
+	ldx	#$40
+
+	stz	WRIO				; %0
+	bit	_JOYSER0
+
+	stx	WRIO				; %1
+	bit	_JOYSER0
+
+;	stx	WRIO				; %1
+	bit	_JOYSER0
+
+;	stx	WRIO				; %1
+	bit	_JOYSER0
+
+	stz	WRIO				; %0
+	bit	_JOYSER0
+
+;	stz	WRIO				; %0
+	bit	_JOYSER0
+
+	stx	WRIO				; %1
+	bit	_JOYSER0
+
+	stz	WRIO				; %0
+	bit	_JOYSER0
+
+	lda	RUMBLE1				; Get Rumble Right.4/Left.4
+
+	lsr	a				; .7 -> .6 / .0 -> .C
+	sta	WRIO
+	bit	_JOYSER0
+
+	rol	a				; .6 / .C -> .0
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .5
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .4
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .3
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .2
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .1
+	sta	WRIO
+	bit	_JOYSER0
+
+	asl	a				; .0
+	sta	WRIO
+	bit	_JOYSER0
+
+	lda	#$ff				; Restore WRIO
+	sta	WRIO
+;	stz	JOYOUT
+
+	mode	'X!'
+	endif
+
+	bra	RJY5000
+
+	mode	'aX'
+RJY4000
+	lda	#$ff				; Invalid Status
+	sta	JOY1Stat
+	ldx	#0
+	stx	JOY1
+;	brl	RJY5000
+
+;
+;	>>>   CONTROLLER II   <<<
+;
+	mode	'aX'
+RJY5000
+	ldx	ITemp+2				; Controller II
+	txa
+	and	#%00001111
+	cmp	#%00000001
+	bne	RJY8000				; NOT a Mouse
+
+	lda	JOY2Stat			; MOUSE Previously Connected?
+	dec	a
+	beq	RJY7000				; Yes!
+;
+;	>>>   MOUSE INITIAL CONNECTION   <<<
+;
+	ldx	#4-1				; 4 Maximum Speed Settings
+RJY6200
+	lda	#$01				; Change Speed 1 Step
+	sta	JOYOUT
+	bit	_JOYSER1
+	stz	JOYOUT
+	bit	_JOYSER1
+;
+	sta	JOYOUT				; Reset Data Counter
+	stz	JOYOUT
+	ldy	#10-1				; 10 Bits to Read
+RJY6400
+	bit	_JOYSER1
+	dey
+	bpl	RJY6400
+	lda	_JOYSER1			; SP10
+	lsr	a
+	lda	_JOYSER1			; SP11
+	rol	a				; %SP
+	and	#%11
+	ifn	useTHEULTIMATEDOOM
+;	cmp	#%00				; SLOW SPEED
+	else
+	cmp	#%01				; FAST SPEED
+	endif
+	beq	RJY6800
+	dex
+	bpl	RJY6200
+RJY6800
+	stz	MOUSE2X				; Default Displacement is 0
+	stz	MOUSE2Y
+	lda	#$01				; MOUSE Connected
+	sta	JOY2Stat
+	ldx	#0
+	stx	JOY2
+	ifn	useMP5
+	bra	RJY9000
+	else
+	mode	'A!'
+	rts
+	endif
+
+	mode	'aX'
+RJY8000
+	lda	#$ff				; Invalid Status
+	sta	JOY2Stat
+	ldx	#0
+	stx	JOY2
+	ifn	useMP5
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	bra	RJY9000
+	else
+	mode	'A!'
+	rts
+	endif
+
+;
+;	>>>   READ MOUSE DISPLACEMENTS   <<<
+;
+	mode	'aX'
+RJY7000
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	ldy	#16-1
+RJY7200
+	lda	_JOYSER1
+	lsr	a
+	rol	MOUSE2X				; Read X Displacement
+	rol	MOUSE2Y				; Read Y Displacement
+	nop
+	nop
+	nop
+	nop
+	dey
+	bpl	RJY7200
+
+	lda	#$01				; MOUSE Connected
+	sta	JOY2Stat
+	stx	JOY2
+	ifn	useMP5
+;	bra	RJY9000
+	else
+	mode	'A!'
+	rts
+	endif
+
+	ifn	useMP5
+;
+;	>>>   READ MULTIPLAYER 5   <<<
+;
+;	!!!   DANGER!!!   FALLS THROUGH FROM ABOVE!!!
+;
+RJY9000
+	mode	'ax!'
+
+	lda	#$01
+	sta	JOYOUT				; Reset Data Counter
+	nop
+	nop
+
+	ldy	#8-1				; Read 8 Controller Bits
+RJY9100
+	lda	_JOYSER0			; Controller I
+	lsr	a
+	lsr	a
+	rol	ITemp+4
+	lda	_JOYSER1			; Controller II
+	lsr	a
+	lsr	a
+	rol	ITemp+6
+	dey
+	bpl	RJY9100
+
+	stz	JOYOUT
+	nop
+	nop
+	
+	ldy	#8-1				; Read 8 Controller Bits
+RJY9200
+	lda	_JOYSER0			; Controller I
+	lsr	a
+	lsr	a
+	rol	ITemp
+	lda	_JOYSER1			; Controller II
+	lsr	a
+	lsr	a
+	rol	ITemp+2
+	dey
+	bpl	RJY9200
+
+	stz	MP5Connected
+	lda	ITemp+4				; Check for MP5 in Port I
+	cmp	#$FF
+	bne	RJY9300
+	lda	ITemp
+	cmp	#$FF
+	bne	RJY9400
+RJY9300
+	lda	ITemp+6				; Check for MP5 in Port II
+	cmp	#$FF
+	bne	RJY9500
+	lda	ITemp+2
+	cmp	#$FF
+	beq	RJY9500
+RJY9400
+	inc	MP5Connected
+RJY9500
+	mode	'AX!'
+	rts
+
+	endif
