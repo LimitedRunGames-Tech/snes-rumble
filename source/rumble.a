@@ -276,12 +276,6 @@ CalcRumbleWave
 ;	>>>   PROCESS WAVE OFFSET   <<<
 ;
 CRW200
-	tya
-	lsr	a
-	tax
-	lda	RumbleWaveEffects,x		; Get Waveform Effect#
-	beq	CRW800
-
 	lda	[RumbleWaveOffsetsPtr],y	; Any Waveform Offset?
 	beq	CRW800				; No
 
@@ -350,7 +344,9 @@ CRW600
 	tya					; .X = Index to Waveform Effect
 	lsr	a
 	tax
+	mode	'a!'
 	stz	RumbleWaveEffects,x		; Clear Waveform Effect#
+	mode	'A!'
 
 	bra	CRW800
 
