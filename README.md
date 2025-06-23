@@ -20,9 +20,9 @@ Various emulators now support LRG Rumble Effects for games using our free Rumble
 
 ## Mesen
 
-Download the emulator here [Mesen](https://mesen.ca/)
+Download the latest development build here [Mesen](https://github.com/SourMesen/Mesen2/#native-builds-recommended)
 
-Be sure to select "SNES Rumble" from the Port 1 drop-down menu in the "Input" settings
+When using Mesen, change the "Input" settings and select "SNES Rumble" from the Port 1 drop-down menu.
 
 ***
 
