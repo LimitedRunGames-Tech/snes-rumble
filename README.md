@@ -20,7 +20,7 @@ Various emulators now support LRG Rumble Effects for games using our free Rumble
 
 ## Mesen
 
-Download the latest development build here [Mesen](https://github.com/SourMesen/Mesen2/#native-builds-recommended)
+Download the latest release build here [Mesen](https://mesen.ca/)
 
 When using Mesen, change the "Input" settings and select "SNES Rumble" from the Port 1 drop-down menu.
 
@@ -39,3 +39,7 @@ The revolutionary first-person shooter on the Super Nintendo, enhanced, expanded
 This test ROM allows a variety of rumble effects to be "played" with a compatible emulator.
 
 Download the test ROM here [RealityTest](https://github.com/LimitedRunGames-Tech/snes-rumble/raw/refs/heads/main/binaries/RT.SFC)
+
+## Star Fox – Shindou Edition (SNES) Romhack
+
+[Star Fox Shindou](https://romhackplaza.org/romhacks/star-fox-shindou-edition-snes/)
